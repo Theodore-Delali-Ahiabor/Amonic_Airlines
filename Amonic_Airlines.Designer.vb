@@ -264,7 +264,6 @@ Partial Class Amonic_Airlines
         Me.ComboBoxOffices.Name = "ComboBoxOffices"
         Me.ComboBoxOffices.Size = New System.Drawing.Size(173, 28)
         Me.ComboBoxOffices.TabIndex = 1
-        Me.ComboBoxOffices.Text = "All Offices"
         '
         'Label3
         '

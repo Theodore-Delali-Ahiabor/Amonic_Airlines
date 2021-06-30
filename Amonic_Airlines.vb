@@ -1,12 +1,12 @@
 ﻿Imports System.Data.OleDb
 Public Class Amonic_Airlines
     ReadOnly con As String = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Users\theod\Desktop\  \HTU\Level 200\2nd Semister\Visual Basic ii\Amonic_Airlines\Airlines_db.accdb"
-    Dim AdminDA As OleDbDataAdapter
-    Dim LoginSQLstmt, RoleSQLstmt, AdminDefaultSQLstmt, AdminSearchSQLstmt As String
+    Dim AdminDA, AdminDA1, AdminDA2 As OleDbDataAdapter
+    Dim LoginSQLstmt, RoleSQLstmt, OfficeSQLStmt, AdminDefaultSQLstmt, AdminSearchSQLstmt As String
     Dim Role As String
     Dim invalidcount As Integer = 0
     Dim InvalidTS, MessageHideTS As TimeSpan
-    Dim LoginCon As New OleDbConnection(con)
+    ReadOnly LoginCon As New OleDbConnection(con)
     Private Sub Amonic_Airlines_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.Text = "Login"
         LoginPanel.Show()
@@ -71,7 +71,6 @@ Public Class Amonic_Airlines
             txtEditRoleEmail.Text = AdminDGV.CurrentRow.Cells(3).Value
             txtEditRoleFname.Text = AdminDGV.CurrentRow.Cells(5).Value
             txtEditRoleLname.Text = AdminDGV.CurrentRow.Cells(6).Value
-            txtEditRoleEmail.Text = AdminDGV.CurrentRow.Cells(3).Value
             txtEditRoleOffice.Text = AdminDGV.CurrentRow.Cells(17).Value
             If AdminDGV.CurrentRow.Cells(15).Value = "Administrator" Then
                 rbtnEditRoleAdmin.Checked = True
@@ -194,16 +193,25 @@ Public Class Amonic_Airlines
         Catch ex As Exception
             MsgBox(ex.ToString)
         End Try
-
     End Sub
+    Dim newuser As String = "Office User"
     Private Sub btnAdduserSave_Click(sender As Object, e As EventArgs) Handles btnAdduserSave.Click
         If txtAddUserEmail.Text <> "" And txtAddUserFname.Text <> "" And txtAddUserLname.Text <> "" And txtAddUserPassword.Text <> "" Then
             Try
-                Dim AddUserSQLStmt As String
+                Dim AddUserSQLStmt, AddUserSQLStmt1, AddUserSQLStmt2 As String
                 Dim AdminDS As New DataSet
-                AddUserSQLStmt = "INSERT INTO Users (Email, [Password], Firstname, Lastname, Birthdate) VALUES ('" & txtAddUserEmail.Text & "','" & txtAddUserPassword.Text & "','" & txtAddUserFname.Text & "','" & txtAddUserLname.Text & "','" & txtAddUserBithDate.Text & "')"
-                AdminDA = New OleDbDataAdapter(AddUserSQLStmt, con)
+                'ADDING NEW USER EMAIL, PASSWORD ,FIRST NAME, LAST NAME, BITH DATE, ACTIVE
+                AddUserSQLStmt = "INSERT INTO Users(Email, [Password], Firstname, Lastname, Birthdate,Active) VALUES ('" & txtAddUserEmail.Text & "','" & txtAddUserPassword.Text & "','" & txtAddUserFname.Text & "','" & txtAddUserLname.Text & "','" & txtAddUserBithDate.Text & "',True)"
+                AdminDA = New OleDbDataAdapter(AddUserSQLStmt, LoginCon)
                 AdminDA.Fill(AdminDS, "Users")
+                'ADDING NEW USER OFFICE TITTLE
+                AddUserSQLStmt1 = "INSERT INTO Offices(Title) VALUES('" & txtAddUserOffice.Text & "')"
+                AdminDA = New OleDbDataAdapter(AddUserSQLStmt1, LoginCon)
+                AdminDA.Fill(AdminDS, "Offices")
+                'ADDING NEW USER ROLE TITTLE
+                AddUserSQLStmt2 = "INSERT INTO Roles(Title) VALUES('" & "Office User" & "')"
+                AdminDA = New OleDbDataAdapter(AddUserSQLStmt2, LoginCon)
+                AdminDA.Fill(AdminDS, "Roles")
                 ShowMessage()
                 ComboBoxOffices_SelectedIndexChanged(sender, e)
                 btnMessage.Text = "Record Added Succesfully"
@@ -242,8 +250,10 @@ Public Class Amonic_Airlines
                 Try
                     LoginSQLstmt = "Select * from [Users] where [Email] = '" & CStr(txtloginussername.Text) & "' and [Password] = '" & CStr(txtloginpassword.Text) & "'"
                     RoleSQLstmt = "Select Roles.*, Users.* From (Users INNER JOIN Roles ON Users.RoleID = Roles.ID) where [Email] = '" & CStr(txtloginussername.Text) & "' and [Password] = '" & CStr(txtloginpassword.Text) & "'"
+                    OfficeSQLStmt = "Select * from Offices"
                     Dim LoginCmd As New OleDbCommand(LoginSQLstmt, LoginCon)
                     Dim RoleCmd As New OleDbCommand(RoleSQLstmt, LoginCon)
+                    Dim OfficeCmd As New OleDbCommand(OfficeSQLStmt, LoginCon)
                     LoginCmd.Connection.Open()
                     Dim LoginRead As OleDbDataReader = LoginCmd.ExecuteReader(CommandBehavior.CloseConnection)
                     If LoginRead.Read And LoginRead.HasRows Then
@@ -265,19 +275,14 @@ Public Class Amonic_Airlines
                                     AdminPanel.Visible = True
                                     AdminPanel.Dock = DockStyle.Fill
                                     'FILLING THE ADMIN COMBOBOX WITH THE OFFICES AVAILABLE IN THE OFFICE TABLE
-                                    Dim AdminComboBoxFillSQLStmt As String = "Select [Title] from Offices"
-                                    Dim AdminComboFillDA As New OleDbDataAdapter(AdminComboBoxFillSQLStmt, LoginCon)
-                                    Dim AdminComboFillDS As New DataSet
-                                    AdminComboFillDA.Fill(AdminComboFillDS)
-                                    ComboBoxOffices.DataSource = AdminComboFillDS.Tables(0)
-                                    ComboBoxOffices.DisplayMember = "Title"
-                                    ComboBoxOffices.ValueMember = "Title"
-                                    txtAddUserOffice.DataSource = AdminComboFillDS.Tables(0)
-                                    txtAddUserOffice.DisplayMember = "Title"
-                                    txtAddUserOffice.ValueMember = "Title"
-                                    txtEditRoleOffice.DataSource = AdminComboFillDS.Tables(0)
-                                    txtEditRoleOffice.DisplayMember = "Title"
-                                    txtEditRoleOffice.ValueMember = "Title"
+                                    Dim OfficeRead As OleDbDataReader = OfficeCmd.ExecuteReader(CommandBehavior.CloseConnection)
+                                    ComboBoxOffices.Items.Add("All Offices")
+                                    ComboBoxOffices.SelectedIndex() = 0
+                                    While OfficeRead.Read
+                                        ComboBoxOffices.Items.Add(OfficeRead.Item("Title").ToString)
+                                        txtAddUserOffice.Items.Add(OfficeRead.Item("Title").ToString)
+                                        txtEditRoleOffice.Items.Add(OfficeRead.Item("Title").ToString)
+                                    End While
                                     ComboBoxOffices_SelectedIndexChanged(sender, e)
                                 Else
                                     OfficeUserPanel.Visible = True
@@ -316,14 +321,13 @@ Public Class Amonic_Airlines
                 End Try
             End If
         ElseIf txtloginussername.Text = "" Then
-                ShowMessage()
-                btnMessage.Text = "Ussername Field is Empty"
-                txtloginussername.Focus()
-            ElseIf txtloginpassword.Text = "" Then
-                ShowMessage()
+            ShowMessage()
+            btnMessage.Text = "Ussername Field is Empty"
+            txtloginussername.Focus()
+        ElseIf txtloginpassword.Text = "" Then
+            ShowMessage()
             btnMessage.Text = " Password Field is Empty"
             txtloginpassword.Focus()
         End If
-
     End Sub
 End Class
